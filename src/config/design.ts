@@ -24,9 +24,9 @@ export interface TypeRule {
 }
 
 export const TYPE = {
-  name: { weight: 700, ttf: '/fonts/Montserrat-Bold.ttf' },
-  data: { weight: 500, ttf: '/fonts/Montserrat-Medium.ttf' },
-  logo: { weight: 400, ttf: '/fonts/Montserrat-Regular.ttf' },
+  name: { weight: 700, ttf: `${import.meta.env.BASE_URL}fonts/Montserrat-Bold.ttf` },
+  data: { weight: 500, ttf: `${import.meta.env.BASE_URL}fonts/Montserrat-Medium.ttf` },
+  logo: { weight: 400, ttf: `${import.meta.env.BASE_URL}fonts/Montserrat-Regular.ttf` },
 } as const satisfies Record<string, TypeRule>;
 
 export type TypeRole = keyof typeof TYPE;

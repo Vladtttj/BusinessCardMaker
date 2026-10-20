@@ -81,7 +81,7 @@ export function BusinessCard({ template, language, data, bilingualTemplate = fal
   return (
     // Одна розмітка картки використовується і в звичайному, і в двомовному режимі.
     <div className={`vcard personal-ua-preview${bilingualTemplate ? ' bilingual-template-preview' : ''}`}>
-      {bilingualTemplate && <img className="bilingual-template-qr" src="/templates/pa-qr-preview.png" alt="" />}
+      {bilingualTemplate && <img className="bilingual-template-qr" src={`${import.meta.env.BASE_URL}templates/pa-qr-preview.png`} alt="" />}
       <div className={`personal-ua-brand${bilingualTemplate && language === 'EN' ? ' bilingual-template-brand-en-wrapper' : ''}`}>
         {bilingualTemplate && language === 'EN' ? (
           <span className="bilingual-template-brand-en">ПРОМАВТОМАТИКА</span>
@@ -130,7 +130,7 @@ export function BusinessCardBack({ template, data, language, showAddress = false
   return (
     // У двомовному режимі зворотній фон — макет із роборукою, а не персональний зворот.
     <div className={`vcard personal-ua-back${bilingualTemplate ? ` bilingual-template-back bilingual-template-back-${language.toLowerCase()}` : ''}`}>
-      <img src="/templates/personal_ua_back_preview.png" alt="" />
+      <img src={`${import.meta.env.BASE_URL}templates/personal_ua_back_preview.png`} alt="" />
       {bilingualTemplate && language === 'EN' && (
         <span className="bilingual-template-back-brand-en">ПРОМАВТОМАТИКА</span>
       )}

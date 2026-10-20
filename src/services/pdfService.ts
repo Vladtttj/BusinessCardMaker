@@ -6,9 +6,9 @@ import { translit } from './authService';
 
 const MM = 72 / 25.4;
 // Позиції нижче задані в міліметрах від верхнього лівого кута відповідного шаблону.
-const PERSONAL_TEMPLATE_URL = '/templates/personal_ua.pdf';
-const BUSINESS_TEMPLATE_URL = '/templates/ua-en-businessUnit.pdf';
-const BILINGUAL_QR_URL = '/templates/pa-qr-preview.png';
+const PERSONAL_TEMPLATE_URL = `${import.meta.env.BASE_URL}templates/personal_ua.pdf`;
+const BUSINESS_TEMPLATE_URL = `${import.meta.env.BASE_URL}templates/ua-en-businessUnit.pdf`;
+const BILINGUAL_QR_URL = `${import.meta.env.BASE_URL}templates/pa-qr-preview.png`;
 
 const BUSINESS_LAYOUT = {
   name: { x: 42.82, top: 8.89, width: 37.126, height: 2.732 },
