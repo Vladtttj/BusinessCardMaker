@@ -14,20 +14,22 @@ interface Props {
 const OPTIONS: { id: LanguageMode; desc: string }[] = [
   { id: 'UA', desc: 'Одна сторона — контакти українською.' },
   { id: 'EN', desc: 'Одна сторона — англомовні дані.' },
-  { id: 'BILINGUAL', desc: 'UA та EN — кожна мовна версія має лицьову й зворотну сторони.' },
+  { id: 'BILINGUAL', desc: 'Дві сторони з інформацією: українською та англійською.' },
 ];
 
 export const Step3Language: React.FC<Props> = ({ selected, template, data, onSelect, onBack }) => {
   // Якщо користувач ще не заповнив форму, показуємо прикладові значення в мініпрев’ю.
   const sample: CardData = {
     ...data,
-    fullName: data.fullName || 'Іван Петренко',
-    fullNameEn: data.fullNameEn || 'Ivan Petrenko',
+    firstName: data.firstName || 'Іван',
+    lastName: data.lastName || 'Петренко',
+    firstNameEn: data.firstNameEn || 'Ivan',
+    lastNameEn: data.lastNameEn || 'Petrenko',
     position: data.position || 'Менеджер з продажу',
     positionEn: data.positionEn || 'Sales Manager',
     businessUnit: data.businessUnit || 'Автоматизація',
     businessUnitEn: data.businessUnitEn || 'Automation',
-    phone: data.phone && data.phone.trim() !== '+380' ? data.phone : '+380 67 123 45 67',
+    phone: data.phone || '671234567',
     email: data.email || 'i.petrenko@promavtomatyka.ua',
   };
 
@@ -36,8 +38,8 @@ export const Step3Language: React.FC<Props> = ({ selected, template, data, onSel
       <div className="panel-head">
         <h2 className="panel-title">Оберіть мову візитки</h2>
         <p className="panel-sub">
-          Мова змінює підписи полів, дані на картці та кількість сторін у PDF. Для UA й EN
-          створюються окремі лицьова та зворотна сторони.
+          Мова визначає дані на картці та кількість сторін у PDF. У режимі UA + EN будуть
+          дві сторони з інформацією: українська та англійська.
         </p>
       </div>
 
@@ -60,7 +62,7 @@ export const Step3Language: React.FC<Props> = ({ selected, template, data, onSel
               </div>
               {option.id === 'BILINGUAL' && (
                 <span className="badge" style={{ position: 'absolute', top: 8, right: 8 }}>
-                  4 сторінки
+                  2 сторони
                 </span>
               )}
             </div>

@@ -22,10 +22,11 @@ export const Step2Template: React.FC<Props> = ({ selected, data, onSelect, onBac
   // Демонстраційні значення потрібні лише для картинок-прикладів, не змінюють форму.
   const sample: CardData = {
     ...data,
-    fullName: data.fullName || 'Іван Петренко',
+    firstName: data.firstName || 'Іван',
+    lastName: data.lastName || 'Петренко',
     position: data.position || 'Менеджер з продажу',
     businessUnit: data.businessUnit || 'Автоматизація',
-    phone: data.phone && data.phone.trim() !== '+380' ? data.phone : '+380 67 123 45 67',
+    phone: data.phone || '671234567',
     email: data.email || 'i.petrenko@promavtomatyka.ua',
     address: data.address || 'м. Вінниця, вул. Пример, 1',
   };

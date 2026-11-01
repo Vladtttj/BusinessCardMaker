@@ -1,8 +1,10 @@
 {/* Структура даних візитки. Поля EN використовуються для мов EN та BILINGUAL */}
 export interface CardData {
   // Паралельні UA/EN значення зберігаються окремо для двомовного макета.
-  fullName: string;
-  fullNameEn: string;
+  firstName: string;
+  lastName: string;
+  firstNameEn: string;
+  lastNameEn: string;
   position: string;
   positionEn: string;
   businessUnit: string;
@@ -25,14 +27,15 @@ export type Step = 1 | 2 | 3 | 4 | 5;
 export type AccessMode = 'microsoft' | 'link' | null;
 
 export const emptyCardData = (): CardData => ({
-  // Початковий телефон містить код країни, решта полів починаються порожніми.
-  fullName: '',
-  fullNameEn: '',
+  firstName: '',
+  lastName: '',
+  firstNameEn: '',
+  lastNameEn: '',
   position: '',
   positionEn: '',
   businessUnit: '',
   businessUnitEn: '',
-  phone: '+380 ',
+  phone: '',
   email: '',
   address: '',
   addressEn: '',

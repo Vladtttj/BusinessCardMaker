@@ -1,6 +1,7 @@
 import { PublicClientApplication, InteractionRequiredAuthError } from '@azure/msal-browser';
 import { msalConfig, loginRequest } from '../config/autoConfig';
 import type { CardData } from '../types/card';
+import { normalizeUaPhone } from '../utils/cardFormatting';
 
 {/* Профіль користувача з Microsoft Graph (/me). */}
 export interface GraphProfile {
@@ -79,15 +80,20 @@ export async function logoutMicrosoft(): Promise<void> {
 {/* Перетворює профіль Graph на попередньо заповнені дані візитки. */}
 export function profileToCardData(profile: GraphProfile, base: CardData): CardData {
   const displayName = profile.displayName ?? '';
+  const displayNameParts = displayName.trim().split(/\s+/).filter(Boolean);
+  const firstName = profile.givenName || displayNameParts[0] || base.firstName;
+  const lastName = profile.surname || displayNameParts.slice(1).join(' ') || base.lastName;
   const phone = profile.mobilePhone || profile.businessPhones?.[0] || base.phone;
   return {
     // Профіль може не мати всіх полів, тому відсутні значення зберігаються з попередньої форми.
     ...base,
-    fullName: displayName || base.fullName,
-    fullNameEn: translit(displayName) || base.fullNameEn,
+    firstName: firstName.toLocaleUpperCase('uk-UA'),
+    lastName: lastName.toLocaleUpperCase('uk-UA'),
+    firstNameEn: (translit(firstName) || base.firstNameEn).toLocaleUpperCase('en-US'),
+    lastNameEn: (translit(lastName) || base.lastNameEn).toLocaleUpperCase('en-US'),
     position: profile.jobTitle ?? base.position,
     email: profile.mail || profile.userPrincipalName || base.email,
-    phone: phone || base.phone,
+    phone: normalizeUaPhone(phone) || base.phone,
     address: profile.officeLocation ?? base.address,
     addressEn: profile.officeLocation ? translit(profile.officeLocation) : base.addressEn,
   };

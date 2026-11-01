@@ -515,15 +515,7 @@ p {
   padding:0;
   border-radius:0
 }
-/* Двомовний лице повторює координати сторінки 1/3 PDF-шаблону. */
-.bilingual-template-qr {
-  position:absolute;
-  left:6%;
-  top:8%;
-  width:12%;
-  height:25%;
-  object-fit:contain
-}
+/* Мініпрев’ю повторює розташування тексту на сторінках PDF-зразка. */
 .bilingual-template-preview .personal-ua-fields {
   top:0;
   height:100%;
@@ -634,92 +626,22 @@ p {
   line-height:1.1;
   white-space:normal
 }
-.personal-ua-back {
-  padding:0;
-  border-radius:0;
-  background:#211f20
+.pdf-page-preview {
+  width:min(100%,396px);
+  margin:8px auto 16px;
+  overflow:hidden;
+  background:#211f20;
+  box-shadow:0 14px 34px #14111838
 }
-.personal-ua-back img {
-  width:100%;
-  height:100%;
+.pdf-page-preview canvas {
   display:block;
-  object-fit:cover
+  width:100%;
+  height:auto
 }
-/* На EN-звороті логотип у макеті UA закривається й показується на англомовній позиції. */
-.bilingual-template-back-en::after {
-  position:absolute;
-  z-index:1;
-  content:"";
-  left:5%;
-  top:57%;
-  width:43%;
-  height:13%;
-  background:#211f20
-}
-.bilingual-template-back-brand-en {
-  position:absolute;
-  z-index:2;
-  left:7.3%;
-  top:78%;
+.pdf-page-error {
+  padding:12px;
   color:#fff;
-  font-size:clamp(7px,2.6cqw,10.3px);
-  line-height:1.15;
-  font-weight:700;
-  letter-spacing:.45px;
-  white-space:nowrap
-}
-.bilingual-template-back-unit {
-  position:absolute;
-  left:6%;
-  top:76%;
-  width:52%;
-  max-height:23%;
-  color:#ff5500;
-  font-size:clamp(7px,2.4cqw,9.5px);
-  line-height:1.2;
-  font-weight:700;
-  text-transform:uppercase;
-  overflow:hidden;
-  white-space:normal
-}
-.personal-ua-unit {
-  position:absolute;
-  left:8%;
-  top:77%;
-  width:52%;
-  color:#ff5500;
-  font-size:clamp(7px,2.4cqw,9.5px);
-  line-height:1.2;
-  font-weight:700;
-  text-transform:uppercase;
-  overflow:hidden;
-  white-space:normal;
-  max-height:18%
-}
-.bilingual-template-back-en .bilingual-template-back-unit {
-  z-index:2
-}
-.bilingual-template-back-en .bilingual-template-back-unit {
-  top:55%;
-  max-height:20%
-}
-.bilingual-template-back-ua .bilingual-template-back-unit {
-  top:42%;
-  width:34%;
-  max-height:24%;
-  font-size:clamp(6px,2.15cqw,8.5px)
-}
-.personal-ua-back-address {
-  position:absolute;
-  left:6%;
-  top:70%;
-  width:52%;
-  max-height:24%;
-  color:#fff;
-  font-size:clamp(6px,2cqw,8px);
-  line-height:1.1;
-  white-space:normal;
-  overflow:hidden;
+  font-size:12px
 }
 .alert {
   border-radius:var(--radius-sm);

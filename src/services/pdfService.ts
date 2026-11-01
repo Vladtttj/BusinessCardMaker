@@ -3,12 +3,12 @@ import fontkit from '@pdf-lib/fontkit';
 import type { CardData, CardMode, LanguageMode } from '../types/card';
 import { BRAND, TYPE, templateById } from '../config/design';
 import { translit } from './authService';
+import { formatCardName, formatUaPhone } from '../utils/cardFormatting';
 
 const MM = 72 / 25.4;
 // Позиції нижче задані в міліметрах від верхнього лівого кута відповідного шаблону.
 const PERSONAL_TEMPLATE_URL = `${import.meta.env.BASE_URL}templates/personal_ua.pdf`;
 const BUSINESS_TEMPLATE_URL = `${import.meta.env.BASE_URL}templates/ua-en-businessUnit.pdf`;
-const BILINGUAL_QR_URL = `${import.meta.env.BASE_URL}templates/pa-qr-preview.png`;
 
 const BUSINESS_LAYOUT = {
   name: { x: 42.82, top: 8.89, width: 37.126, height: 2.732 },
@@ -38,20 +38,6 @@ const BILINGUAL_STORE_UNIT_LAYOUT = {
   top: 25,
   width: 42.246,
   height: 6.5,
-};
-
-const BILINGUAL_BACK_STORE_UNIT_LAYOUT = {
-  x: 6,
-  top: 22,
-  width: 30,
-  height: 15,
-};
-
-const BILINGUAL_EN_BACK_STORE_UNIT_LAYOUT = {
-  x: 6,
-  top: 27.5,
-  width: 44,
-  height: 10.5,
 };
 
 const STORE_BACK_UNIT_LAYOUT = {
@@ -205,7 +191,11 @@ function drawPersonalFront(
   dataFont: PDFFont,
 ) {
   const t = templateById(template);
-  const name = loc(language, data.fullName, data.fullNameEn);
+  const name = formatCardName(
+    loc(language, data.firstName, data.firstNameEn),
+    loc(language, data.lastName, data.lastNameEn),
+    language === 'UA' ? 'uk-UA' : 'en-US',
+  );
   const position = loc(language, data.position, data.positionEn);
   const address = loc(language, data.address, data.addressEn);
   const white = rgb(1, 1, 1);
@@ -216,10 +206,8 @@ function drawPersonalFront(
   if (t.show.position) {
     drawPersonalLine(page, position, dataFont, PERSONAL_UA_LAYOUT.position, 9, white, language === 'UA' ? 'Посада' : 'Job title');
   }
-  const phone = data.phone.trim();
-  if (phone && phone !== '+380') {
-    drawPersonalLine(page, phone, dataFont, PERSONAL_UA_LAYOUT.phone, 9, white, 'Телефон');
-  }
+  const phone = formatUaPhone(data.phone);
+  drawPersonalLine(page, phone, dataFont, PERSONAL_UA_LAYOUT.phone, 9, white, 'Телефон');
   if (data.email.trim()) {
     drawPersonalLine(page, data.email, dataFont, PERSONAL_UA_LAYOUT.email, 9, white, 'E-mail');
   }
@@ -277,58 +265,32 @@ async function generateBilingualPdf(templateMode: CardMode, data: CardData): Pro
   }
 
   const template = await PDFDocument.load(await response.arrayBuffer());
-  if (template.getPageCount() < 4) {
-    throw new Error('У двомовному PDF-шаблоні мають бути 4 сторінки для UA та EN версій.');
+  if (template.getPageCount() < 3) {
+    throw new Error('У двомовному PDF-зразку мають бути українська та англійська сторінки.');
   }
 
   const pdfDoc = await PDFDocument.create();
   pdfDoc.registerFontkit(fontkit);
   const nameFont = await pdfDoc.embedFont(await loadFontBytes(TYPE.name.ttf), { subset: true });
   const dataFont = await pdfDoc.embedFont(await loadFontBytes(TYPE.data.ttf), { subset: true });
-  const qrResponse = await fetch(BILINGUAL_QR_URL);
-  if (!qrResponse.ok) {
-    throw new Error(`Не вдалося завантажити QR-код (${qrResponse.status}): ${BILINGUAL_QR_URL}`);
-  }
-  const qrImage = await pdfDoc.embedPng(await qrResponse.arrayBuffer());
   const t = templateById(templateMode);
 
   const pages = [
-    // Сторінки 1/2 — UA лицьова/зворотна; 3/4 — EN лицьова/зворотна.
-    { index: 0, side: 'UA', front: true },
-    { index: 1, side: 'UA', front: false },
-    { index: 2, side: 'EN', front: true },
-    { index: 3, side: 'EN', front: false },
+    // Зразок уже містить фон та QR на цих сторінках; беремо лише UA та EN.
+    { index: 0, side: 'UA' },
+    { index: 2, side: 'EN' },
   ] as const;
 
-  for (const { index, side, front } of pages) {
+  for (const { index, side } of pages) {
     const [page] = await pdfDoc.copyPages(template, [index]);
     pdfDoc.addPage(page);
 
     const unit = loc(side, data.businessUnit, data.businessUnitEn);
-    if (!front) {
-      // QR додається тільки поверх сторін із роборукою; інший малюнок лишається частиною PDF-шаблону.
-      page.drawImage(qrImage, {
-        x: 6 * MM,
-        y: page.getHeight() - 7 * MM - 12 * MM,
-        width: 10 * MM,
-        height: 12 * MM,
-      });
-      if (templateMode === 'Store' && unit) {
-        drawTemplateText(
-          page,
-          unit.toLocaleUpperCase(),
-          nameFont,
-          side === 'EN' ? BILINGUAL_EN_BACK_STORE_UNIT_LAYOUT : BILINGUAL_BACK_STORE_UNIT_LAYOUT,
-          hex(BRAND.accent),
-          true,
-          side === 'EN' ? 9.5 : 8.5,
-          side === 'UA' ? 'Підрозділ на звороті' : 'Business unit on the back',
-        );
-      }
-      continue;
-    }
-
-    const name = loc(side, data.fullName, data.fullNameEn);
+    const name = formatCardName(
+      loc(side, data.firstName, data.firstNameEn),
+      loc(side, data.lastName, data.lastNameEn),
+      side === 'UA' ? 'uk-UA' : 'en-US',
+    );
     const position = loc(side, data.position, data.positionEn);
     const address = loc(side, data.address, data.addressEn);
 
@@ -339,7 +301,7 @@ async function generateBilingualPdf(templateMode: CardMode, data: CardData): Pro
       drawTemplateText(page, position, dataFont, { ...BUSINESS_LAYOUT.name, top: 12.5, height: 5 }, rgb(1, 1, 1), false, 7.5, side === 'UA' ? 'Посада' : 'Job title');
     }
 
-    const contacts = [data.phone.trim(), data.email.trim()].filter(Boolean);
+    const contacts = [formatUaPhone(data.phone), data.email.trim()].filter(Boolean);
     contacts.forEach((contact, contactIndex) => {
       drawTemplateText(
         page,
@@ -428,18 +390,21 @@ export interface PdfParams {
 export function buildFileName({ template, language, data }: PdfParams): string {
   const langSuffix = language === 'BILINGUAL' ? 'UA-EN' : language;
   const slug = (value: string) =>
-    (translit(value).trim().replace(/\s+/g, '_').replace(/[^\w-]/g, '') || 'card');
+    (translit(value).trim().toLocaleLowerCase('en-US').replace(/\s+/g, '_').replace(/[^\w-]/g, '') || 'card');
   if (template === 'Store') {
     const place = slug(data.businessUnit || 'store');
     return `${place}_store_card_${langSuffix}.pdf`;
   }
-  const who = slug(data.fullName || data.fullNameEn);
+  const who = slug(
+    [data.firstName, data.lastName].filter(Boolean).join(' ')
+      || [data.firstNameEn, data.lastNameEn].filter(Boolean).join(' '),
+  );
   return `${who}_card_${langSuffix}.pdf`;
 }
 
 export async function generateCardPdf(params: PdfParams): Promise<Uint8Array> {
   const { template, language, data } = params;
-  // Для BILINGUAL обираємо чотиристорінковий PDF-макет, для решти — personal_ua.pdf.
+  // Для BILINGUAL беремо дві сторінки з мовного зразка; для решти — personal_ua.pdf.
   if (language === 'BILINGUAL') {
     return generateBilingualPdf(template, data);
   }

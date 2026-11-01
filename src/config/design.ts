@@ -35,14 +35,16 @@ export type TypeRole = keyof typeof TYPE;
 type Lang = 'UA' | 'EN';
 
 export interface Dict {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   position: string;
   businessUnit: string;
   phone: string;
   email: string;
   address: string;
   ph: {
-    fullName: string;
+    firstName: string;
+    lastName: string;
     position: string;
     businessUnit: string;
     phone: string;
@@ -53,33 +55,37 @@ export interface Dict {
 
 export const DICT: Record<Lang, Dict> = {
   UA: {
-    fullName: "Ім'я та прізвище",
+    firstName: "Ім'я",
+    lastName: 'Прізвище',
     position: 'Посада',
     businessUnit: 'Підрозділ',
     phone: 'Телефон',
     email: 'E-mail',
     address: 'Адреса',
     ph: {
-      fullName: 'Іван Петренко',
+      firstName: 'Іван',
+      lastName: 'Петренко',
       position: 'Менеджер з продажу',
       businessUnit: 'Автоматизація',
-      phone: '+380 67 123 45 67',
+      phone: '+380 (67) 123 4567',
       email: 'i.petrenko@promavtomatyka.ua',
       address: 'м. Вінниця, вул. Пример, 1',
     },
   },
   EN: {
-    fullName: 'Full name',
+    firstName: 'First name',
+    lastName: 'Last name',
     position: 'Job title',
     businessUnit: 'Business unit',
     phone: 'Phone',
     email: 'E-mail',
     address: 'Address',
     ph: {
-      fullName: 'Ivan Petrenko',
+      firstName: 'Ivan',
+      lastName: 'Petrenko',
       position: 'Sales Manager',
       businessUnit: 'Automation',
-      phone: '+380 67 123 45 67',
+      phone: '+380 (67) 123 4567',
       email: 'i.petrenko@promavtomatyka.ua',
       address: '1 Pryklad St., Vinnytsia',
     },
