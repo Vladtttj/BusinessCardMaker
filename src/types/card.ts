@@ -24,7 +24,7 @@ export type CardMode = 'Store' | 'Personal' | 'Business';
 export type Step = 1 | 2 | 3 | 4 | 5;
 
 {/* Спосіб доступу, підтверджений на кроці 1 */}
-export type AccessMode = 'microsoft' | 'link' | null;
+export type AccessMode = 'microsoft' | 'link' | 'guest' | null;
 
 export const emptyCardData = (): CardData => ({
   firstName: '',

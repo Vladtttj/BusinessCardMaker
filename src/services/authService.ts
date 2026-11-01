@@ -1,4 +1,4 @@
-import { PublicClientApplication, InteractionRequiredAuthError } from '@azure/msal-browser';
+import { PublicClientApplication } from '@azure/msal-browser';
 import { msalConfig, loginRequest } from '../config/autoConfig';
 import type { CardData } from '../types/card';
 import { normalizeUaPhone } from '../utils/cardFormatting';
@@ -22,44 +22,26 @@ export interface SessionUser {
 }
 
 let pcaInstance: PublicClientApplication | null = null;
+let initialization: Promise<void> | null = null;
+let redirectHandling: Promise<{ user: SessionUser; profile: GraphProfile } | null> | null = null;
 
 function getPca(): PublicClientApplication {
-  // MSAL-клієнт створюється один раз і далі повторно використовується.
   if (!pcaInstance) {
     pcaInstance = new PublicClientApplication(msalConfig);
   }
   return pcaInstance;
 }
 
-{/* Повний вхід: ініціалізація MSAL → popup-логін → токен → профіль Graph. */}
-export async function loginWithMicrosoft(): Promise<{ user: SessionUser; profile: GraphProfile }> {
+async function initializePca(): Promise<PublicClientApplication> {
   const pca = getPca();
-  await pca.initialize();
+  initialization ??= pca.initialize();
+  await initialization;
+  return pca;
+}
 
-  const accounts = pca.getAllAccounts();
-  let account = accounts[0];
-
-  if (!account) {
-    const result = await pca.loginPopup(loginRequest);
-    account = result.account;
-  }
-
-  let token: string;
-  try {
-    // Спершу пробуємо непомітне оновлення токена; popup потрібен лише за вимогою MSAL.
-    const silent = await pca.acquireTokenSilent({ ...loginRequest, account });
-    token = silent.accessToken;
-  } catch (err) {
-    if (err instanceof InteractionRequiredAuthError) {
-      const interactive = await pca.acquireTokenPopup({ ...loginRequest, account });
-      token = interactive.accessToken;
-    } else {
-      throw err;
-    }
-  }
-
+async function getGraphProfile(accessToken: string): Promise<{ user: SessionUser; profile: GraphProfile }> {
   const res = await fetch('https://graph.microsoft.com/v1.0/me', {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!res.ok) throw new Error(`Graph /me повернув ${res.status}`);
   const profile: GraphProfile = await res.json();
@@ -69,11 +51,35 @@ export async function loginWithMicrosoft(): Promise<{ user: SessionUser; profile
   return { user: { name, email }, profile };
 }
 
+export async function loginWithMicrosoft(): Promise<void> {
+  const pca = await initializePca();
+  await pca.loginRedirect(loginRequest);
+}
+
+export async function completeMicrosoftRedirectLogin(): Promise<{ user: SessionUser; profile: GraphProfile } | null> {
+  if (redirectHandling) return redirectHandling;
+  redirectHandling = completeMicrosoftRedirectLoginOnce();
+  return redirectHandling;
+}
+
+async function completeMicrosoftRedirectLoginOnce(): Promise<{ user: SessionUser; profile: GraphProfile } | null> {
+  const pca = await initializePca();
+  const result = await pca.handleRedirectPromise();
+  const account = result?.account ?? pca.getActiveAccount() ?? pca.getAllAccounts()[0];
+  if (!account) return null;
+
+  pca.setActiveAccount(account);
+  const tokenResult = result?.accessToken
+    ? result
+    : await pca.acquireTokenSilent({ ...loginRequest, account });
+  return getGraphProfile(tokenResult.accessToken);
+}
+
 export async function logoutMicrosoft(): Promise<void> {
-  const pca = getPca();
+  const pca = await initializePca();
   const accounts = pca.getAllAccounts();
   if (accounts[0]) {
-    await pca.logoutPopup({ account: accounts[0] });
+    await pca.logoutRedirect({ account: accounts[0] });
   }
 }
 

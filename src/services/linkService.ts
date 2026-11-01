@@ -5,9 +5,11 @@ export interface TokenPayload {
 }
 
 export const create48hToken = (): string => {
+  const nonceBytes = crypto.getRandomValues(new Uint8Array(16));
+  const nonce = Array.from(nonceBytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
   const payload: TokenPayload = {
     createdAt: Date.now(),
-    nonce: Math.random().toString(36).substring(2, 9),
+    nonce,
   };
   const jsonString = JSON.stringify(payload);
   // URL-safe Base64 дає змогу передати payload у query-параметрі без спецсимволів.
@@ -22,7 +24,7 @@ export const validate48hToken = (token: string): boolean => {
       base64 += '=';
     }
     const payload: TokenPayload = JSON.parse(atob(base64));
-    if (!payload.createdAt) return false;
+    if (!Number.isFinite(payload.createdAt) || typeof payload.nonce !== 'string' || !payload.nonce) return false;
     const ageInHours = (Date.now() - payload.createdAt) / (1000 * 60 * 60);
     return ageInHours >= 0 && ageInHours <= 48;
   } catch {

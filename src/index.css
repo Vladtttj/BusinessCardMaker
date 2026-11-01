@@ -513,17 +513,16 @@ p {
   background:#211f20;
   color:#fff;
   padding:0;
-  border-radius:0
+  border-radius:0;
+  font-size:clamp(8px,3.03cqw,12px)
 }
 /* Мініпрев’ю повторює розташування тексту на сторінках PDF-зразка. */
 .bilingual-template-preview .personal-ua-fields {
   top:0;
-  height:100%;
-  font-size:clamp(7px,2.7cqw,10.7px)
+  height:100%
 }
 .bilingual-template-preview .personal-ua-name {
-  top:17.8%;
-  font-size:clamp(8px,2.7cqw,10.7px)
+  top:17.8%
 }
 .bilingual-template-preview .personal-ua-position {
   top:25%
@@ -535,8 +534,7 @@ p {
   top:37%
 }
 .bilingual-template-preview .personal-ua-address {
-  top:64.3%;
-  font-size:clamp(6px,2.3cqw,9px)
+  top:64.3%
 }
 .bilingual-template-preview .personal-ua-brand {
   top:69%
@@ -581,7 +579,6 @@ p {
 .personal-ua-name {
   top:0;
   color:#ff5500;
-  font-size:clamp(9px,3.54cqw,14px);
   font-weight:700;
   text-transform:uppercase;
   line-height:1.2
@@ -596,8 +593,7 @@ p {
   top:62.5%
 }
 .personal-ua-address {
-  top:77.5%;
-  font-size:clamp(6px,2.02cqw,8px);
+  top:71.25%;
   line-height:1.2;
   white-space:normal;
   max-height:20%
@@ -609,7 +605,6 @@ p {
   width:39%;
   max-height:25%;
   color:#ff5500;
-  font-size:clamp(7px,2.53cqw,10px);
   line-height:1.2;
   font-weight:700;
   text-transform:uppercase;
@@ -622,7 +617,6 @@ p {
   top:50%;
   width:auto;
   max-height:13%;
-  font-size:clamp(7px,3.2cqw,12.7px);
   line-height:1.1;
   white-space:normal
 }
@@ -698,6 +692,7 @@ p {
   color:var(--ink);
   background:var(--bg);
   flex:1;
+  min-width:0;
   padding:10px 12px;
   font-size:13px
 }

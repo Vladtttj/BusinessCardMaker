@@ -70,35 +70,6 @@ export const Step4Form: React.FC<Props> = ({ template, language, data, setData, 
     }
   }, []);
 
-  // Перевірка переповнення
-  const warnings: string[] = [];
-  const check = (label: string, v: string, max: number) => {
-    if (v.trim().length > max) {
-      warnings.push(`${label}: шрифт буде зменшено для вміщення тексту; якщо поле все ще задовге, скоротіть його.`);
-    }
-  };
-  
-  if (t.show.name && showUa) {
-    check("Ім'я", data.firstName, 20);
-    check('Прізвище', data.lastName, 24);
-  }
-  if (t.show.name && showEn) {
-    check('First name', data.firstNameEn, 20);
-    check('Last name', data.lastNameEn, 24);
-  }
-  if (t.show.position && showUa) check('Посада', data.position, 34);
-  if (t.show.position && showEn) check('Job title', data.positionEn, 36);
-  if ((t.show.businessUnit || template === 'Store') && showUa) check('Підрозділ', data.businessUnit, 38);
-  if ((t.show.businessUnit || template === 'Store') && showEn) check('Business unit', data.businessUnitEn, 40);
-  if ((t.show.address || (template === 'Store' && language === 'BILINGUAL')) && showUa) {
-    check('Адреса', data.address, 44);
-  }
-  if ((t.show.address || (template === 'Store' && language === 'BILINGUAL')) && showEn) {
-    check('Address', data.addressEn, 46);
-  }
-  check('Телефон', data.phone, 24);
-  check('E-mail', data.email, 40);
-  
   return (
     <div className="editor-grid">
       {/* ── Ліва колонка: форма ── */}
@@ -182,12 +153,6 @@ export const Step4Form: React.FC<Props> = ({ template, language, data, setData, 
           />
           <Field label={DICT.UA.email} name="email" value={data.email} placeholder={DICT.UA.ph.email} onChange={onChange} />
         </div>
-
-        {warnings.length > 0 && (
-          <div className="alert warn" style={{ marginTop: 16 }}>
-            {warnings.map((w) => <div key={w}>{w}</div>)}
-          </div>
-        )}
 
         <div className="btn-row between">
           <button className="btn btn-ghost" onClick={onBack}>← Назад</button>

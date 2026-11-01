@@ -1,4 +1,3 @@
-import { useLayoutEffect, useRef } from 'react';
 import type { CardData, CardMode } from '../types/card';
 import { DICT, templateById } from '../config/design';
 import { formatCardName, formatUaPhone } from '../utils/cardFormatting';
@@ -18,8 +17,7 @@ function loc(lang: Side, ua: string, en: string): string {
   return (primary || fallback).trim();
 }
 
-// Зменшує шрифт у межах заданого CSS-поля, якщо довгий текст інакше обрізався б.
-function FittedText({
+function CardText({
   className,
   text,
   opacity = 1,
@@ -28,37 +26,8 @@ function FittedText({
   text: string;
   opacity?: number;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    const element = ref.current;
-    if (!element) return;
-
-    const fit = () => {
-      element.style.fontSize = '';
-      let size = Number.parseFloat(window.getComputedStyle(element).fontSize);
-      const minimumSize = Math.min(size, 4.5);
-
-      while (size > minimumSize) {
-        element.style.fontSize = `${size}px`;
-        if (element.scrollWidth <= element.clientWidth && element.scrollHeight <= element.clientHeight) {
-          return;
-        }
-        size = Math.max(minimumSize, size - 0.25);
-      }
-
-      element.style.fontSize = `${minimumSize}px`;
-    };
-
-    fit();
-    const observer = new ResizeObserver(fit);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [className, text]);
-
   return (
     <div
-      ref={ref}
       className={className}
       title={text}
       style={{ opacity }}
@@ -98,27 +67,27 @@ export function BusinessCard({ template, language, data, bilingualTemplate = fal
       </div>
       <div className="personal-ua-fields">
         {t.show.name && (
-          <FittedText
+          <CardText
             className="personal-ua-name"
             text={name || `${dict.ph.firstName} ${dict.ph.lastName}`.toLocaleUpperCase(language === 'UA' ? 'uk-UA' : 'en-US')}
             opacity={phOpacity(name)}
           />
         )}
         {t.show.position && (
-          <FittedText className="personal-ua-position" text={position || dict.ph.position} opacity={phOpacity(position)} />
+          <CardText className="personal-ua-position" text={position || dict.ph.position} opacity={phOpacity(position)} />
         )}
-        <FittedText
+        <CardText
           className="personal-ua-phone"
           text={phone}
           opacity={data.phone ? 1 : 0.42}
         />
-        <FittedText className="personal-ua-email" text={email || dict.ph.email} opacity={phOpacity(email)} />
+        <CardText className="personal-ua-email" text={email || dict.ph.email} opacity={phOpacity(email)} />
         {t.show.address && address && (
-          <FittedText className="personal-ua-address" text={address} />
+          <CardText className="personal-ua-address" text={address} />
         )}
       </div>
       {template === 'Store' && unit && (
-        <FittedText className="personal-ua-front-unit" text={unit} />
+        <CardText className="personal-ua-front-unit" text={unit} />
       )}
     </div>
   );

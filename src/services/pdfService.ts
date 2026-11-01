@@ -6,12 +6,13 @@ import { translit } from './authService';
 import { formatCardName, formatUaPhone } from '../utils/cardFormatting';
 
 const MM = 72 / 25.4;
+const CARD_TEXT_SIZE = 8;
 // Позиції нижче задані в міліметрах від верхнього лівого кута відповідного шаблону.
 const PERSONAL_TEMPLATE_URL = `${import.meta.env.BASE_URL}templates/personal_ua.pdf`;
 const BUSINESS_TEMPLATE_URL = `${import.meta.env.BASE_URL}templates/ua-en-businessUnit.pdf`;
 
 const BUSINESS_LAYOUT = {
-  name: { x: 42.82, top: 8.89, width: 37.126, height: 2.732 },
+  name: { x: 42.82, top: 8.89, width: 37.126, height: 3.2 },
   contacts: { x: 42.754, top: 15.474, width: 32.456, height: 6.418 },
   address: { x: 42.754, top: 32.169, width: 42.246, height: 9.377 },
 };
@@ -23,7 +24,7 @@ const PERSONAL_UA_LAYOUT = {
   position: { top: 19, height: 8 },
   phone: { top: 29, height: 5 },
   email: { top: 35, height: 5 },
-  address: { top: 41, height: 9 },
+  address: { top: 38.5, height: 9 },
 };
 
 const STORE_FRONT_UNIT_LAYOUT = {
@@ -118,7 +119,6 @@ function drawTemplateText(
   area: TextArea,
   color: ReturnType<typeof rgb>,
   multiline = false,
-  initialSize = 8,
   label = 'Поле',
 ) {
   // pdf-lib використовує точки та відлік Y знизу, тому координати макета конвертуються тут.
@@ -126,20 +126,13 @@ function drawTemplateText(
   const top = area.top * MM;
   const maxWidth = area.width * MM;
   const maxHeight = area.height * MM;
-  let size = initialSize;
-  let lines = [text.trim()];
-
-  while (size >= 4.5) {
-    // Зменшуємо кегль кроками, доки рядки не вмістяться і по ширині, і по висоті.
-    lines = multiline ? wrapText(text, font, size, maxWidth) : [text.trim()];
-    const widthFits = lines.every((line) => font.widthOfTextAtSize(line, size) <= maxWidth);
-    const lineHeight = multiline ? size * 1.1 : size;
-    const heightFits = lines.length * lineHeight <= maxHeight;
-    if (widthFits && heightFits) break;
-    size -= 0.25;
-  }
-  if (size < 4.5) {
-    throw new Error(`${label}: текст задовгий для картки. Скоротіть його.`);
+  const size = CARD_TEXT_SIZE;
+  const lines = multiline ? wrapText(text, font, size, maxWidth) : [text.trim()];
+  const widthFits = lines.every((line) => font.widthOfTextAtSize(line, size) <= maxWidth);
+  const lineHeight = multiline ? size * 1.1 : size;
+  const heightFits = lines.length * lineHeight <= maxHeight;
+  if (!widthFits || !heightFits) {
+    throw new Error(`${label}: текст не вміщується за фіксованого розміру шрифту. Скоротіть його.`);
   }
 
   lines.forEach((line, index) => {
@@ -158,7 +151,6 @@ function drawPersonalLine(
   text: string,
   font: PDFFont,
   area: { top: number; height: number },
-  size: number,
   color: ReturnType<typeof rgb>,
   label: string,
   multiline = false,
@@ -177,7 +169,6 @@ function drawPersonalLine(
     },
     color,
     multiline,
-    size,
     label,
   );
 }
@@ -201,18 +192,18 @@ function drawPersonalFront(
   const white = rgb(1, 1, 1);
 
   if (t.show.name) {
-    drawPersonalLine(page, name, nameFont, PERSONAL_UA_LAYOUT.name, 12, hex(BRAND.accent), language === 'UA' ? 'Ім’я' : 'Full name');
+    drawPersonalLine(page, name, nameFont, PERSONAL_UA_LAYOUT.name, hex(BRAND.accent), language === 'UA' ? 'Ім’я' : 'Full name');
   }
   if (t.show.position) {
-    drawPersonalLine(page, position, dataFont, PERSONAL_UA_LAYOUT.position, 9, white, language === 'UA' ? 'Посада' : 'Job title');
+    drawPersonalLine(page, position, dataFont, PERSONAL_UA_LAYOUT.position, white, language === 'UA' ? 'Посада' : 'Job title');
   }
   const phone = formatUaPhone(data.phone);
-  drawPersonalLine(page, phone, dataFont, PERSONAL_UA_LAYOUT.phone, 9, white, 'Телефон');
+  drawPersonalLine(page, phone, dataFont, PERSONAL_UA_LAYOUT.phone, white, 'Телефон');
   if (data.email.trim()) {
-    drawPersonalLine(page, data.email, dataFont, PERSONAL_UA_LAYOUT.email, 9, white, 'E-mail');
+    drawPersonalLine(page, data.email, dataFont, PERSONAL_UA_LAYOUT.email, white, 'E-mail');
   }
   if (t.show.address) {
-    drawPersonalLine(page, address, dataFont, PERSONAL_UA_LAYOUT.address, 8, white, language === 'UA' ? 'Адреса' : 'Address', true);
+    drawPersonalLine(page, address, dataFont, PERSONAL_UA_LAYOUT.address, white, language === 'UA' ? 'Адреса' : 'Address', true);
   }
   if (template === 'Store') {
     const unit = loc(language, data.businessUnit, data.businessUnitEn).toLocaleUpperCase();
@@ -224,7 +215,6 @@ function drawPersonalFront(
         STORE_FRONT_UNIT_LAYOUT,
         hex(BRAND.accent),
         true,
-        10,
         language === 'UA' ? 'Підрозділ' : 'Business unit',
       );
     }
@@ -240,7 +230,6 @@ function drawStoreBackUnit(page: PDFPage, unit: string, font: PDFFont, address =
       STORE_BACK_ADDRESS_LAYOUT,
       rgb(1, 1, 1),
       false,
-      6.5,
       'Адреса на звороті',
     );
   }
@@ -253,7 +242,6 @@ function drawStoreBackUnit(page: PDFPage, unit: string, font: PDFFont, address =
     STORE_BACK_UNIT_LAYOUT,
     hex(BRAND.accent),
     true,
-    9.5,
     'Підрозділ',
   );
 }
@@ -295,10 +283,10 @@ async function generateBilingualPdf(templateMode: CardMode, data: CardData): Pro
     const address = loc(side, data.address, data.addressEn);
 
     if (t.show.name && name) {
-      drawTemplateText(page, name, nameFont, BUSINESS_LAYOUT.name, hex(BRAND.accent), false, 8, side === 'UA' ? 'Ім’я' : 'Full name');
+      drawTemplateText(page, name, nameFont, BUSINESS_LAYOUT.name, hex(BRAND.accent), false, side === 'UA' ? 'Ім’я' : 'Full name');
     }
     if (t.show.position && position) {
-      drawTemplateText(page, position, dataFont, { ...BUSINESS_LAYOUT.name, top: 12.5, height: 5 }, rgb(1, 1, 1), false, 7.5, side === 'UA' ? 'Посада' : 'Job title');
+      drawTemplateText(page, position, dataFont, { ...BUSINESS_LAYOUT.name, top: 12.5, height: 5 }, rgb(1, 1, 1), false, side === 'UA' ? 'Посада' : 'Job title');
     }
 
     const contacts = [formatUaPhone(data.phone), data.email.trim()].filter(Boolean);
@@ -310,13 +298,12 @@ async function generateBilingualPdf(templateMode: CardMode, data: CardData): Pro
         { ...BUSINESS_LAYOUT.contacts, top: BUSINESS_LAYOUT.contacts.top + contactIndex * 3.175 },
         rgb(1, 1, 1),
         false,
-        8,
         contactIndex === 0 ? 'Телефон' : 'E-mail',
       );
     });
 
     if (t.show.address && address) {
-      drawTemplateText(page, address, dataFont, BUSINESS_LAYOUT.address, rgb(1, 1, 1), true, 8, side === 'UA' ? 'Адреса' : 'Address');
+      drawTemplateText(page, address, dataFont, BUSINESS_LAYOUT.address, rgb(1, 1, 1), true, side === 'UA' ? 'Адреса' : 'Address');
     }
     if (templateMode === 'Store' && unit) {
       drawTemplateText(
@@ -326,7 +313,6 @@ async function generateBilingualPdf(templateMode: CardMode, data: CardData): Pro
         BILINGUAL_STORE_UNIT_LAYOUT,
         hex(BRAND.accent),
         true,
-        10,
         side === 'UA' ? 'Підрозділ' : 'Business unit',
       );
     }

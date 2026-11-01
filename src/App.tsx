@@ -6,12 +6,11 @@ import { Step2Template } from './components/Editor/Step2Template';
 import { Step3Language } from './components/Editor/Step3Language';
 import { Step4Form } from './components/Editor/Step4Form';
 import { Step5Export } from './components/Preview/Step5Export';
-import { loginWithMicrosoft, logoutMicrosoft, profileToCardData } from './services/authService';
+import { completeMicrosoftRedirectLogin, loginWithMicrosoft, logoutMicrosoft, profileToCardData } from './services/authService';
 import { getAccessFromUrl, validate48hToken, tokenRemainingHours } from './services/linkService';
 
-{/* DEMO_BYPASS = true: старт одразу з кроку 2 без обовʼязкового входу (зручно для швидкого перегляду).
-    Постав false, щоб увімкнути повний access gate згідно з ТЗ (старт з кроку 1). */}
-const DEMO_BYPASS = true;
+{/* Access gate увімкнений: починаємо з входу та відкриваємо майстер після авторизації. */}
+const DEMO_BYPASS = false;
 
 // Один список керує підписами та доступністю кроків у верхній навігації.
 const STEPS: { step: Step; label: string }[] = [
@@ -22,13 +21,26 @@ const STEPS: { step: Step; label: string }[] = [
   { step: 5, label: 'Експорт PDF' },
 ];
 
+function getInitialAccessState() {
+  const token = getAccessFromUrl();
+  if (token && validate48hToken(token)) {
+    return { mode: 'link' as AccessMode, hoursLeft: tokenRemainingHours(token), error: null };
+  }
+  return {
+    mode: null as AccessMode,
+    hoursLeft: null,
+    error: token ? 'Тимчасове посилання недійсне або прострочене (> 48 год). Увійдіть через Microsoft 365.' : null,
+  };
+}
+
 function App() {
   // Стан зберігається тут, щоб вибір і введені дані не губилися між кроками.
-  const [accessMode, setAccessMode] = useState<AccessMode>(null);
+  const [initialAccess] = useState(getInitialAccessState);
+  const [accessMode, setAccessMode] = useState<AccessMode>(initialAccess.mode);
   const [userName, setUserName] = useState<string>('');
-  const [msLoading, setMsLoading] = useState(false);
-  const [msError, setMsError] = useState<string | null>(null);
-  const [linkHoursLeft, setLinkHoursLeft] = useState<number | null>(null);
+  const [msLoading, setMsLoading] = useState(true);
+  const [msError, setMsError] = useState<string | null>(initialAccess.error);
+  const [linkHoursLeft, setLinkHoursLeft] = useState<number | null>(initialAccess.hoursLeft);
 
   const [currentStep, setCurrentStep] = useState<Step>(DEMO_BYPASS ? 2 : 1);
   const [furthest, setFurthest] = useState<Step>(DEMO_BYPASS ? 2 : 1);
@@ -36,16 +48,28 @@ function App() {
   const [language, setLanguage] = useState<LanguageMode>('UA');
   const [data, setData] = useState<CardData>(emptyCardData());
 
-  {/* Access gate: перевірка 48-годинного токена з URL при завантаженні. */}
   useEffect(() => {
-    const token = getAccessFromUrl();
-    if (!token) return;
-    if (validate48hToken(token)) {
-      setAccessMode('link');
-      setLinkHoursLeft(tokenRemainingHours(token));
-    } else {
-      setMsError('Тимчасове посилання недійсне або прострочене (> 48 год). Увійдіть через Microsoft 365.');
-    }
+    let active = true;
+    completeMicrosoftRedirectLogin()
+      .then((result) => {
+        if (!active || !result) return;
+        setUserName(result.user.name);
+        setData((previous) => profileToCardData(result.profile, previous));
+        setAccessMode('microsoft');
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          const message = error instanceof Error ? error.message : String(error);
+          setMsError(`Не вдалося завершити вхід Microsoft 365: ${message}`);
+        }
+      })
+      .finally(() => {
+        if (active) setMsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const go = (step: Step) => {
@@ -62,14 +86,10 @@ function App() {
     setMsLoading(true);
     setMsError(null);
     try {
-      // Після входу беремо Graph-профіль і заповнюємо лише ті поля, для яких є дані.
-      const { user, profile } = await loginWithMicrosoft();
-      setUserName(user.name);
-      setData((prev) => profileToCardData(profile, prev));
-      setAccessMode('microsoft');
+      await loginWithMicrosoft();
     } catch (e) {
       const msg = (e as Error)?.message ?? 'Невідома помилка';
-      setMsError(`Вхід через Microsoft 365 не вдався: ${msg}. Перевірте clientId/authority у src/config/autoConfig.ts або скористайтеся тимчасовим посиланням.`);
+      setMsError(`Вхід через Microsoft 365 не вдався: ${msg}. Ця реєстрація підтримує робочі або навчальні акаунти. Для особистого Outlook потрібен clientId застосунку, у якому в Microsoft Entra увімкнені особисті акаунти.`);
     } finally {
       setMsLoading(false);
     }
@@ -84,7 +104,14 @@ function App() {
     setLinkHoursLeft(null);
     setCurrentStep(DEMO_BYPASS ? 2 : 1);
     setFurthest(DEMO_BYPASS ? 2 : 1);
-    window.history.replaceState({}, '', window.location.pathname);
+    window.history.replaceState({}, '', new URL(import.meta.env.BASE_URL, window.location.origin).toString());
+  };
+
+  const handleGuestAccess = () => {
+    setAccessMode('guest');
+    setUserName('');
+    setCurrentStep(2);
+    setFurthest(2);
   };
 
   return (
@@ -100,7 +127,7 @@ function App() {
         {accessMode ? (
           <div className="user-chip">
             <span className="avatar">{(userName || 'U').charAt(0).toUpperCase()}</span>
-            <span>{userName || (accessMode === 'link' ? 'Гостьовий доступ' : 'Користувач')}</span>
+            <span>{userName || (accessMode === 'microsoft' ? 'Користувач' : 'Гостьовий доступ')}</span>
             <button className="btn btn-ghost" style={{ padding: '5px 12px', fontSize: 12 }} onClick={handleLogout}>
               Вийти
             </button>
@@ -137,6 +164,7 @@ function App() {
           msLoading={msLoading}
           msError={msError}
           onMsLogin={handleMsLogin}
+          onGuestAccess={handleGuestAccess}
           onContinue={() => go(2)}
         />
       )}
